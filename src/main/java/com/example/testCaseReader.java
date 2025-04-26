@@ -46,11 +46,16 @@ public class testCaseReader {
                 JsonArray keyVals = obj.getAsJsonArray("key_values");
                 String table=obj.get("table").getAsString();
                 String condition = "";
+                String conditionForPig="";
                 for (int i = 0; i < keyAttrs.size(); i++) {
                     if (i > 0) condition += " AND ";
                     condition += keyAttrs.get(i).getAsString() + "='" + keyVals.get(i).getAsString() + "'";
                 }
-
+                for (int i = 0; i < keyAttrs.size(); i++) {
+                    if (i > 0) conditionForPig += " AND ";
+                    conditionForPig += keyAttrs.get(i).getAsString() + "=='" + keyVals.get(i).getAsString() + "'";
+                }
+                
                 if (op.equals("GET")) {
                     switch (db) {
                         case "SQL":
@@ -59,8 +64,13 @@ public class testCaseReader {
                             SQLclass.getResult("SELECT * FROM "+table+" WHERE " + condition + ";",obj,timeCounter);
                             break;
                         case "PIG":
-                            System.out.println("PIG: FILTER " + table + " BY " + condition + ";");
-                            PigClass.getResult("PIG: FILTER " + table + " BY " + condition + ";",obj,timeCounter);
+                            System.out.println("FILTER " + table + " BY " + conditionForPig + ";");
+                            String filteredAlias = table + "_filtered";
+                            String pigScript = 
+                                    filteredAlias + " = FILTER " + table + " BY " + conditionForPig + ";\n" +
+                                    "DUMP " + filteredAlias + ";";
+
+                            PigClass.getResult(pigScript, obj, timeCounter);
                             break;
                         case "MONGO":
                             System.out.println("db.Grades.find({ " + mongoCondition(keyAttrs, keyVals) + " })");
@@ -77,6 +87,11 @@ public class testCaseReader {
                             if (i > 0) updates += ", ";
                             updates += colAttrs.get(i).getAsString() + "='" + colVals.get(i).getAsString() + "'";
                         }
+                        String columns = "";
+                        for (int i = 0; i < colAttrs.size(); i++) {
+                            if (i > 0) columns += ", ";
+                            columns += colAttrs.get(i).getAsString();
+                        }
 
                     switch (db) {
                         case "SQL":
@@ -85,8 +100,17 @@ public class testCaseReader {
                         
                             break;
                         case "PIG":
-                            System.out.println("PIG: FOREACH "+table+" GENERATE " + updates + " WHERE " + condition + ";");
-                            PigClass.setResult("PIG: FOREACH "+table+" GENERATE " + updates + " WHERE " + condition + ";",obj,timeCounter);
+                            System.out.println("FOREACH "+table+" GENERATE " + updates + " WHERE " + condition + ";");
+                            String pigScript = 
+                                table + "_filtered = FILTER " + table + " BY " + conditionForPig + ";\n" +
+                                table + "_unfiltered = FILTER " + table + " BY NOT " + conditionForPig + ";\n"+
+                                table + "_projected = FOREACH " + table + "_filtered GENERATE " + "studentID, subjectCode, "+"'"+colVals.get(0)+"' "+"as grade" + ";\n" +
+                                "Final_Grades = UNION Grades_unfiltered, Grades_projected;\n"+
+                                "STORE Final_Grades INTO 'file:/Users/SGBHAT/Library/CloudStorage/OneDrive-iiit-b/IIIT-B/sem6/NOSql/Project/project/src/main/java/com/example/updated_grades.csv' USING PigStorage(',');\n";
+                                
+                                
+
+                                PigClass.setResult(pigScript, obj, timeCounter);
                             break;
                         case "MONGO":
                             System.out.println("db.Grades.updateOne({ " + mongoCondition(keyAttrs, keyVals) + " }, { $set: { " + mongoUpdate(colAttrs, colVals) + " } });");

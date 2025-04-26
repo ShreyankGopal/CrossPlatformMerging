@@ -6,6 +6,7 @@
 {"db": "SQL", "op": "SET", "table": "Grades", "key_attributes": ["studentID", "subjectCode"], "key_values": ["8bc6bb96e00acb88ee954fc1702afb48a2d1ea05309d90f3dfedb3a155a6d06e", "IT 989/20 / Thesis / Research hours"], "column_attributes": ["grade"], "column_values": ["B"]}
 {"db": "MONGO", "op": "GET", "table": "Grades", "key_attributes": ["studentID", "subjectCode"], "key_values": ["379fbe4ed37dd655ad0b6e6b1f85170ef5b39f85f722534470e3b9ac7080edd5", "AI 703 / Geographic Information Systems"]}
 {"db": "MONGO", "op": "SET", "table": "Grades", "key_attributes": ["studentID", "subjectCode"], "key_values": ["fedafcd150b9a17932760554a0ec9208266957a49da49214f4f9c7e1776f340d", "GNL 101 / English"], "column_attributes": ["grade"], "column_values": ["C"]}
+{"db": "MONGO", "op": "GET", "table": "Grades", "key_attributes": ["studentID", "subjectCode"], "key_values": ["fedafcd150b9a17932760554a0ec9208266957a49da49214f4f9c7e1776f340d", "GNL 101 / English"]}
 {"op": "MERGE", "from": "PIG", "to": "SQL"}
 {"op": "MERGE", "from": "SQL", "to": "PIG"}
 {"op": "MERGE", "from": "SQL", "to": "MONGO"}

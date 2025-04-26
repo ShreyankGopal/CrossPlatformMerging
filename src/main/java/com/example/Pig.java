@@ -10,8 +10,8 @@ import com.google.gson.JsonObject;
 public class Pig {
 
     private final String baseLoadCommand = 
-        "grades = LOAD '/Users/SGBHAT/Library/CloudStorage/OneDrive-iiit-b/IIIT-B/sem6/NOSql/Project/project/src/main/java/com/example/grades.csv' " +
-        "USING PigStorage(',') AS (studentId:chararray, courseId:chararray, grade:chararray);\n";
+        "Grades = LOAD 'file:/Users/SGBHAT/Library/CloudStorage/OneDrive-iiit-b/IIIT-B/sem6/NOSql/Project/project/src/main/java/com/example/grades.csv' " +
+        "USING PigStorage(',') AS (studentID:chararray, subjectCode:chararray, grade:chararray);\n\n";
 
     public void getResult(String pigQuery,JsonObject obj,int time) {
         obj.addProperty("time", time);
