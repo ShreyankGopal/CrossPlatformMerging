@@ -107,7 +107,7 @@ public class testCaseReader {
                                 table + "_filtered_projected = FOREACH " + table + "_filtered GENERATE studentID, subjectCode, '" + colVals.get(0) + "' as grade;\n" +
                                 table + "_unfiltered_projected = FOREACH " + table + "_unfiltered GENERATE studentID, subjectCode, grade;\n" +
                                 "Final_Grades = UNION " + table + "_unfiltered_projected, " + table + "_filtered_projected;\n" +
-                                "STORE Final_Grades INTO 'file:/Users/SGBHAT/Library/CloudStorage/OneDrive-iiit-b/IIIT-B/sem6/NOSql/Project/project/src/main/java/com/example/updated_grades.csv' USING PigStorage(',');\n";
+                                "STORE Grades_filtered_projected INTO 'file:/Users/SGBHAT/Library/CloudStorage/OneDrive-iiit-b/IIIT-B/sem6/NOSql/Project/project/src/main/java/com/example/updated_grades.csv' USING PigStorage(',');\n";
                                 
                                 
 
