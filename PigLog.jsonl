@@ -1,0 +1,2 @@
+{"db":"PIG","op":"SET","table":"Grades","key_attributes":["studentID","subjectCode"],"key_values":["0821a962c2726e5df442dc86f74a371ce338c2436dd2e566f85f07883c5271c2","EGC 102 / Digital Design"],"column_attributes":["grade"],"column_values":["B"],"time":1}
+{"db":"PIG","op":"GET","table":"Grades","key_attributes":["studentID","subjectCode"],"key_values":["0821a962c2726e5df442dc86f74a371ce338c2436dd2e566f85f07883c5271c2","EGC 102 / Digital Design"],"time":2}
