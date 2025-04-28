@@ -10,11 +10,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class TestCaseReader {
+public class testCaseReader {
     public MySQL SQLclass;
     public Mongo MongoClass;
     public Pig PigClass;
-    public TestCaseReader(MySQL SQLclass,Mongo MongoClass,Pig PigClass){
+    public testCaseReader(MySQL SQLclass,Mongo MongoClass,Pig PigClass){
         this.SQLclass=SQLclass;
         this.MongoClass=MongoClass;
         this.PigClass=PigClass;
