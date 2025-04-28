@@ -37,6 +37,7 @@ public class testCaseReader {
                     String from = obj.get("from").getAsString();
                     String to = obj.get("to").getAsString();
                     System.out.println("-- MERGE: Copy data from " + from + " to " + to);
+                    MergeHandler.merge(from,to);
                     continue;
                 }
 
