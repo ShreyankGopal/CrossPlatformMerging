@@ -14,7 +14,7 @@ import com.google.gson.JsonObject;
 public class Pig {
 
     private final String baseLoadCommand = 
-        "Grades = LOAD 'file:/Users/SGBHAT/Library/CloudStorage/OneDrive-iiit-b/IIIT-B/sem6/NOSql/Project/project/src/main/java/com/example/grades.csv' " +
+        "Grades = LOAD 'src/main/java/com/example/grades.csv' " +
         "USING PigStorage(',') AS (studentID:chararray, subjectCode:chararray, grade:chararray);\n\n";
 
     public void getResult(String pigQuery,JsonObject obj,int time) {
@@ -105,8 +105,8 @@ public class Pig {
 
         // ===== START: Update grades.csv =====
         String originalFilePath = "src/main/java/com/example/grades.csv";
-        String updatedFilePath = "src/main/java/com/example/updated_grades.csv/part-m-00000";  // note: inside folder
-        String finalOutputPath = "src/main/java/com/example/grades.csv";  // overwrite original grades.csv
+        String updatedFilePath = "src/main/java/com/example/updated_grades.csv/part-m-00000";
+        // String finalOutputPath = "src/main/java/com/example/grades.csv";  // overwrite original grades.csv
 
         Map<String, String> updates = new HashMap<>();
 
@@ -125,7 +125,7 @@ public class Pig {
         }
 
         // Create a temp file to store final output
-        File tempFile = new File("src/main/java/com/example/temp_grades.csv");
+        File tempFile = new File(System.getProperty("java.io.tmpdir") + "/temp_grades.csv");
         try (
             BufferedReader br = new BufferedReader(new FileReader(originalFilePath));
             BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile))
@@ -147,7 +147,7 @@ public class Pig {
         // Replace original grades.csv with updated temp file
         tempFile.renameTo(new File(originalFilePath));
         System.out.println("grades.csv successfully updated!");
-        File updatedGradesDir = new File("/Users/SGBHAT/Library/CloudStorage/OneDrive-iiit-b/IIIT-B/sem6/NOSql/Project/project/src/main/java/com/example/updated_grades.csv");
+        File updatedGradesDir = new File("src/main/java/com/example/updated_grades.csv");
         if (updatedGradesDir.exists()) {
             deleteDirectory(updatedGradesDir);
         }

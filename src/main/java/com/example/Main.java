@@ -23,8 +23,9 @@ public class Main {
 
         MySQL SQLclass = new MySQL(mainApp.conn, mainApp.stmt);
         Mongo MongoClass = new Mongo(mainApp.mongoClient, mainApp.database);
-        Pig PigClass=new Pig();
-        testCaseReader testReader = new testCaseReader(SQLclass,MongoClass,PigClass);
+        Pig PigClass = new Pig();
+        MergeHandler Merger = new MergeHandler();
+        TestCaseReader testReader = new TestCaseReader(SQLclass,MongoClass,PigClass);
         testReader.readTest();
     }
 

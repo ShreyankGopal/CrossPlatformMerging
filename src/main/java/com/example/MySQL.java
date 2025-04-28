@@ -22,7 +22,7 @@ public class MySQL {
             }
             obj.addProperty("time", time);
             try {
-                FileWriter writer=new FileWriter("SQLLog.jsonl",true);
+                FileWriter writer=new FileWriter("MySQLLog.jsonl",true);
                 writer.write(obj.toString()+System.lineSeparator());
                 writer.close();
             } catch (Exception e) {
@@ -38,7 +38,7 @@ public class MySQL {
             stmt.executeUpdate(update);
             obj.addProperty("time", time);
             try {
-                FileWriter writer=new FileWriter("SQLLog.jsonl",true);
+                FileWriter writer=new FileWriter("MySQLLog.jsonl",true);
                 writer.write(obj.toString()+System.lineSeparator());
                 writer.close();
             } catch (Exception e) {

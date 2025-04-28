@@ -1,20 +1,12 @@
 package com.example;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import java.io.*;
+import java.util.*;
+import com.google.gson.*;
 
 public class MergeHandler {
 
-    // Global timestamp counter
-    public static int globalCounter = 1;
+    public static int timeCounter = 0;
 
     // Global oplog line counters
     public static int mysqlOplogLineCount = 0;
@@ -26,7 +18,6 @@ public class MergeHandler {
 
     // Global merged flags
     public static Map<String, Boolean> mergedFlags = new HashMap<>();
-    
     static {
         // Initialize pointer pairs
         pointerPairs.put("mysql->mongo", new int[]{0, 0});
@@ -37,16 +28,16 @@ public class MergeHandler {
         pointerPairs.put("pig->mongo", new int[]{0, 0});
 
         // Initialize merge flags
-        mergedFlags.put("mysql_merged_with_mongo", false);
-        mergedFlags.put("mysql_merged_with_pig", false);
-        mergedFlags.put("mongo_merged_with_mysql", false);
-        mergedFlags.put("mongo_merged_with_pig", false);
-        mergedFlags.put("pig_merged_with_mysql", false);
-        mergedFlags.put("pig_merged_with_mongo", false);
+        mergedFlags.put("mysql_merged_with_mongo", true);
+        mergedFlags.put("mysql_merged_with_pig", true);
+        mergedFlags.put("mongo_merged_with_mysql", true);
+        mergedFlags.put("mongo_merged_with_pig", true);
+        mergedFlags.put("pig_merged_with_mysql", true);
+        mergedFlags.put("pig_merged_with_mongo", true);
     }
 
     public static void merge(String from, String to) throws IOException {
-        System.out.println("-- Merging from " + from + " to " + to);
+        System.out.println("Merging...");
 
         String fromFile = getOplogFile(from);
         String toFile = getOplogFile(to);
@@ -56,6 +47,7 @@ public class MergeHandler {
         int toPointer = pointers[1];
 
         List<JsonObject> fromOps = readLatestOps(fromFile, fromPointer, from);
+        System.out.println(fromPointer+" "+toPointer);
         List<JsonObject> toOps = readLatestOps(toFile, toPointer, to);
 
         Map<String, JsonObject> fromMap = buildLatestSetMap(fromOps);
@@ -185,52 +177,68 @@ public class MergeHandler {
     private static JsonObject createNewSetOp(String toDb, JsonObject sourceOp) {
         JsonObject newOp = sourceOp.deepCopy();
         newOp.addProperty("db", toDb);
-        newOp.addProperty("time", globalCounter++);
+        newOp.addProperty("time", ++timeCounter);
         return newOp;
     }
 
-    private static void incrementLineCounter(String db) {
-        if (db.equalsIgnoreCase("SQL")) mysqlOplogLineCount++;
+    public static void incrementLineCounter(String db) {
+        if (db.equalsIgnoreCase("MYSQL")) mysqlOplogLineCount++;
         else if (db.equalsIgnoreCase("MONGO")) mongoOplogLineCount++;
         else if (db.equalsIgnoreCase("PIG")) pigOplogLineCount++;
     }
 
     private static int getCurrentLineCount(String db) {
-        if (db.equalsIgnoreCase("SQL")) return mysqlOplogLineCount;
+        if (db.equalsIgnoreCase("MYSQL")) return mysqlOplogLineCount;
         else if (db.equalsIgnoreCase("MONGO")) return mongoOplogLineCount;
         else return pigOplogLineCount;
     }
 
     private static String getOplogFile(String db) {
-        if (db.equalsIgnoreCase("SQL")) return "SQLLog.jsonl";
+        if (db.equalsIgnoreCase("MYSQL")) return "MySQLLog.jsonl";
         else if (db.equalsIgnoreCase("MONGO")) return "MongoLog.jsonl";
         else return "PigLog.jsonl";
     }
 
     private static void updateMergedFlags(String from, String to) {
-        mergedFlags.put(from.toLowerCase() + "merged_with" + to.toLowerCase(), true);
+        String currentMerge = from.toLowerCase() + "_merged_with_" + to.toLowerCase();
+        mergedFlags.put(currentMerge, true);
 
         // Check transitive relations
-        if (from.equalsIgnoreCase("pig") && mergedFlags.get("mongo_merged_with_pig")) {
-            mergedFlags.put("mongo_merged_with_" + to.toLowerCase(), true);
+        if (mergedFlags.get("mysql_merged_with_mongo") && currentMerge.equals("mongo_merged_with_pig")){
+            mergedFlags.put("mysql_merged_with_pig", true);
         }
-        if (from.equalsIgnoreCase("mongo") && mergedFlags.get("pig_merged_with_mongo")) {
-            mergedFlags.put("pig_merged_with_" + to.toLowerCase(), true);
+        else if (mergedFlags.get("mysql_merged_with_pig") && currentMerge.equals("pig_merged_with_mongo")){
+            mergedFlags.put("mysql_merged_with_mongo", true);
         }
-        if (from.equalsIgnoreCase("mysql") && mergedFlags.get("mongo_merged_with_mysql")) {
-            mergedFlags.put("mongo_merged_with_" + to.toLowerCase(), true);
+        else if (mergedFlags.get("mongo_merged_with_mysql") && currentMerge.equals("mysql_merged_with_pig")){
+            mergedFlags.put("mongo_merged_with_pig", true);
+        }
+        else if (mergedFlags.get("mongo_merged_with_pig") && currentMerge.equals("pig_merged_with_mysql")) {
+            mergedFlags.put("mongo_merged_with_mysql", true);
+        }
+        else if (mergedFlags.get("pig_merged_with_mysql") && currentMerge.equals("mysql_merged_with_mongo")){
+            mergedFlags.put("pig_merged_with_mongo", true);
+        }
+        else if (mergedFlags.get("pig_merged_with_mongo") && currentMerge.equals("mongo_merged_with_mysql")){
+            mergedFlags.put("pig_merged_with_mysql", true);
         }
     }
 
     private static boolean allSystemsMerged() {
+        for (Map.Entry<String, Boolean> entry : mergedFlags.entrySet()) {
+            System.out.println("System: " + entry.getKey() + ", Merged: " + entry.getValue());
+        }
         for (Boolean merged : mergedFlags.values()) {
-            if (!merged) return false;
+            if (!merged) {
+                return false;
+            }
         }
         return true;
     }
+    
 
     private static void flushOplogs() throws IOException {
-        new FileWriter("SQLLog.jsonl", false).close();
+        new FileWriter("MySQLLog.jsonl", false).close();
         new FileWriter("MongoLog.jsonl", false).close();
         new FileWriter("PigLog.jsonl", false).close();
 
@@ -244,7 +252,7 @@ public class MergeHandler {
             pointerPairs.put(key, new int[]{0, 0});
         }
         for (String key : mergedFlags.keySet()) {
-            mergedFlags.put(key, false);
+            mergedFlags.put(key, true);
         }
     }
 }

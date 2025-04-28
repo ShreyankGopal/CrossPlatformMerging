@@ -10,18 +10,17 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class testCaseReader {
+public class TestCaseReader {
     public MySQL SQLclass;
     public Mongo MongoClass;
     public Pig PigClass;
-    public int timeCounter=0;
-    public testCaseReader(MySQL SQLclass,Mongo MongoClass,Pig PigClass){
+    public TestCaseReader(MySQL SQLclass,Mongo MongoClass,Pig PigClass){
         this.SQLclass=SQLclass;
         this.MongoClass=MongoClass;
         this.PigClass=PigClass;
     }
     public void readTest() {
-        String filePath = "/Users/SGBHAT/Library/CloudStorage/OneDrive-iiit-b/IIIT-B/sem6/NOSql/Project/project/src/main/java/com/example/testcase.jsonl"; // Path to your JSON file
+        String filePath = "src/main/java/com/example/testcase.jsonl"; // Path to your JSON file
         ;
 
 
@@ -29,17 +28,18 @@ public class testCaseReader {
             String line;
             Gson gson = new Gson();
 
-            while ((line = br.readLine()) != null) {
-                timeCounter++;
+            while ((line = br.readLine()) != null && !line.isEmpty()){
                 JsonObject obj = JsonParser.parseString(line).getAsJsonObject();
 
                 if (obj.has("op") && obj.get("op").getAsString().equals("MERGE")) {
                     String from = obj.get("from").getAsString();
                     String to = obj.get("to").getAsString();
-                    System.out.println("-- MERGE: Copy data from " + from + " to " + to);
-                    MergeHandler.merge(from,to);
+                    System.out.println("-- MERGE: " + from + " -> " + to);
+                    MergeHandler.merge(from, to);
                     continue;
                 }
+
+                MergeHandler.timeCounter++;
 
                 String db = obj.get("db").getAsString();
                 String op = obj.get("op").getAsString();
@@ -59,10 +59,10 @@ public class testCaseReader {
                 
                 if (op.equals("GET")) {
                     switch (db) {
-                        case "SQL":
+                        case "MYSQL":
                             
                             System.out.println("SELECT * FROM "+table+" WHERE " + condition + ";");
-                            SQLclass.getResult("SELECT * FROM "+table+" WHERE " + condition + ";",obj,timeCounter);
+                            SQLclass.getResult("SELECT * FROM "+table+" WHERE " + condition + ";",obj,MergeHandler.timeCounter);
                             break;
                         case "PIG":
                             System.out.println("FILTER " + table + " BY " + conditionForPig + ";");
@@ -71,15 +71,15 @@ public class testCaseReader {
                                     filteredAlias + " = FILTER " + table + " BY " + conditionForPig + ";\n" +
                                     "DUMP " + filteredAlias + ";";
 
-                            PigClass.getResult(pigScript, obj, timeCounter);
+                            PigClass.getResult(pigScript, obj, MergeHandler.timeCounter);
                             break;
                         case "MONGO":
                             System.out.println("db.Grades.find({ " + mongoCondition(keyAttrs, keyVals) + " })");
                             String filter="{ "+mongoCondition(keyAttrs, keyVals)+" }";
-                            MongoClass.getResult(table,filter,obj,timeCounter);
+                            MongoClass.getResult(table,filter,obj,MergeHandler.timeCounter);
                             break;
                     }
-                    } else if (op.equals("SET")) {
+                } else if (op.equals("SET")) {
                         JsonArray colAttrs = obj.getAsJsonArray("column_attributes");
                         JsonArray colVals = obj.getAsJsonArray("column_values");
 
@@ -95,9 +95,12 @@ public class testCaseReader {
                         }
 
                     switch (db) {
-                        case "SQL":
+                        case "MYSQL":
                             System.out.println("UPDATE Grades SET " + updates + " WHERE " + condition + ";");
-                            SQLclass.setResult("UPDATE Grades SET " + updates + " WHERE " + condition + ";",obj,timeCounter);
+                            SQLclass.setResult("UPDATE Grades SET " + updates + " WHERE " + condition + ";",obj,MergeHandler.timeCounter);
+
+                            MergeHandler.mergedFlags.put("mysql_merged_with_mongo", false);
+                            MergeHandler.mergedFlags.put("mysql_merged_with_pig", false);
                         
                             break;
                         case "PIG":
@@ -107,21 +110,27 @@ public class testCaseReader {
                                 table + "_unfiltered = FILTER " + table + " BY NOT (" + conditionForPig + ");\n" +
                                 table + "_filtered_projected = FOREACH " + table + "_filtered GENERATE studentID, subjectCode, '" + colVals.get(0) + "' as grade;\n" +
                                 table + "_unfiltered_projected = FOREACH " + table + "_unfiltered GENERATE studentID, subjectCode, grade;\n" +
-                                "Final_Grades = UNION " + table + "_unfiltered_projected, " + table + "_filtered_projected;\n" +
-                                "STORE Grades_filtered_projected INTO 'file:/Users/SGBHAT/Library/CloudStorage/OneDrive-iiit-b/IIIT-B/sem6/NOSql/Project/project/src/main/java/com/example/updated_grades.csv' USING PigStorage(',');\n";
-                                
-                                
+                                "Final_" + table + "= UNION " + table + "_unfiltered_projected, " + table + "_filtered_projected;\n" +
+                                "STORE " + table + "_filtered_projected INTO 'src/main/java/com/example/updated_grades.csv' USING PigStorage(',');\n";
+                            PigClass.setResult(pigScript, obj, MergeHandler.timeCounter);
 
-                                PigClass.setResult(pigScript, obj, timeCounter);
+                            MergeHandler.mergedFlags.put("pig_merged_with_mysql", false);
+                            MergeHandler.mergedFlags.put("pig_merged_with_mongo", false);
+
                             break;
                         case "MONGO":
                             System.out.println("db.Grades.updateOne({ " + mongoCondition(keyAttrs, keyVals) + " }, { $set: { " + mongoUpdate(colAttrs, colVals) + " } });");
                             String filter="{ "+mongoCondition(keyAttrs, keyVals)+" }";
                             String update="{ "+mongoUpdate(colAttrs, colVals)+" }";
-                            MongoClass.setResult(table,filter,update,obj,timeCounter);
+                            MongoClass.setResult(table,filter,update,obj,MergeHandler.timeCounter);
+
+                            MergeHandler.mergedFlags.put("mongo_merged_with_mysql", false);
+                            MergeHandler.mergedFlags.put("mongo_merged_with_pig", false);
+
                             break;
                     }
                 }
+                MergeHandler.incrementLineCounter(db);
             }
 
         } catch (IOException e) {
