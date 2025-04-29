@@ -2,6 +2,7 @@ package com.example;
 import java.io.FileWriter;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -16,14 +17,23 @@ public class MySQL {
     public void getResult(String query,JsonObject obj,int time){
         try {
             ResultSet rs = stmt.executeQuery(query);
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+            
             while (rs.next()) {
-                // Example: print first column
-                System.out.println(rs.getString(1)+" | " + rs.getString(2) + " | "+ rs.getString(3));
+                for (int i = 1; i <= columnCount; i++) {
+                    System.out.print(rs.getString(i));
+                    if (i < columnCount) {
+                        System.out.print(" | ");
+                    }
+                }
+                System.out.println();
             }
+            
             obj.addProperty("time", time);
             try {
-                FileWriter writer=new FileWriter("MySQLLog.jsonl",true);
-                writer.write(obj.toString()+System.lineSeparator());
+                FileWriter writer = new FileWriter("MySQLLog.jsonl", true);
+                writer.write(obj.toString() + System.lineSeparator());
                 writer.close();
             } catch (Exception e) {
                 System.out.println(e);

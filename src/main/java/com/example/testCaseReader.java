@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -58,11 +59,33 @@ public class testCaseReader {
                 }
                 
                 if (op.equals("GET")) {
+                    JsonArray getColumnsArray = obj.getAsJsonArray("getColumns");
+                    List<String> getCols = new ArrayList<>();
+                    for (JsonElement el : getColumnsArray) {
+                        getCols.add(el.getAsString());
+                    }
+                    JsonArray getColumns = obj.has("getColumns") ? obj.getAsJsonArray("getColumns") : null;
+                    String selectedColumns = String.join(", ", getCols);
+                    // calculating the projection for mongo db
+                    String projection = null;
+                        if (getColumns != null && !getColumns.isEmpty()) {
+                            StringBuilder projBuilder = new StringBuilder("{ ");
+                            for (int i = 0; i < getColumns.size(); i++) {
+                                projBuilder.append("\"").append(getColumns.get(i).getAsString()).append("\": 1");
+                                if (i < getColumns.size() - 1) {
+                                    projBuilder.append(", ");
+                                }
+                            }
+                            projBuilder.append(" }");
+                            projection = projBuilder.toString();
+                            System.out.println("Projection: " + projection);
+                        }
+
                     switch (db) {
                         case "MYSQL":
                             
-                            System.out.println("SELECT * FROM "+table+" WHERE " + condition + ";");
-                            SQLclass.getResult("SELECT * FROM "+table+" WHERE " + condition + ";",obj,MergeHandler.timeCounter);
+                            System.out.println("SELECT " + selectedColumns + " FROM " + table + " WHERE " + condition + ";");
+                            SQLclass.getResult("SELECT " + selectedColumns + " FROM " + table + " WHERE " + condition + ";",obj,MergeHandler.timeCounter);
                             break;
                         case "PIG":
                             System.out.println("FILTER " + table + " BY " + conditionForPig + ";");
@@ -76,7 +99,7 @@ public class testCaseReader {
                         case "MONGO":
                             System.out.println("db.Grades.find({ " + mongoCondition(keyAttrs, keyVals) + " })");
                             String filter="{ "+mongoCondition(keyAttrs, keyVals)+" }";
-                            MongoClass.getResult(table,filter,obj,MergeHandler.timeCounter);
+                            MongoClass.getResult(table,filter,obj,projection,MergeHandler.timeCounter);
                             break;
                     }
                 } else if (op.equals("SET")) {

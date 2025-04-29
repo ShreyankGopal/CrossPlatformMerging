@@ -1,0 +1,7 @@
+{"db": "MONGO", "op": "SET", "table": "Grades", "key_attributes": ["studentID", "subjectCode"], "key_values": ["ffba274d8a68b64e86980a5d807a0057faa389d2c7a5857424d47dc960e8c434", "AIM 511 / Machine Learning"], "column_attributes": ["grade"], "column_values": ["B"]}
+{"db": "MONGO", "op": "GET", "table": "Grades", "key_attributes": ["studentID", "subjectCode"], "key_values": ["ffba274d8a68b64e86980a5d807a0057faa389d2c7a5857424d47dc960e8c434", "AIM 511 / Machine Learning"], "getColumns": ["grade"]}
+{"db": "PIG", "op": "SET", "table": "Grades", "key_attributes": ["studentID", "subjectCode"], "key_values": ["0821a962c2726e5df442dc86f74a371ce338c2436dd2e566f85f07883c5271c2", "EGC 102 / Digital Design"], "column_attributes": ["grade"], "column_values": ["A"]}
+{"db": "PIG", "op": "GET", "table": "Grades", "key_attributes": ["studentID", "subjectCode"], "key_values": ["0821a962c2726e5df442dc86f74a371ce338c2436dd2e566f85f07883c5271c2", "EGC 102 / Digital Design"], "getColumns": ["grade"]}
+{"op": "MERGE", "from": "MONGO", "to": "PIG"}
+{"db": "MONGO", "op": "SET", "table": "Grades", "key_attributes": ["studentID", "subjectCode"], "key_values": ["ffba274d8a68b64e86980a5d807a0057faa389d2c7a5857424d47dc960e8c434", "AIM 511 / Machine Learning"], "column_attributes": ["grade"], "column_values": ["A"]}
+{"op": "MERGE", "from": "MONGO", "to": "PIG"}

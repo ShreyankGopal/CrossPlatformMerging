@@ -15,25 +15,28 @@ public class Mongo{
         this.mongoClient=mongoClient;
         this.database=database;
     }
-    public void getResult(String collectionName, String filterJson,JsonObject obj,int time) {
+    public void getResult(String collectionName, String filterJson, JsonObject obj, String projection, int time) {
         try {
             MongoCollection<Document> collection = database.getCollection(collectionName);
-
+    
             Document filter = Document.parse(filterJson);  // Parse JSON string to Document
-            FindIterable<Document> results = collection.find(filter);
-
+            Document projectionDoc = Document.parse(projection); // Convert JsonObject to Document
+    
+            FindIterable<Document> results = collection.find(filter).projection(projectionDoc);
+    
             for (Document doc : results) {
-                //System.out.println("------------------------MONGO----------------------");
                 System.out.println(doc.toJson());
             }
+    
             obj.addProperty("time", time);
-            FileWriter writer=new FileWriter("MongoLog.jsonl",true);
-            writer.write(obj.toString()+System.lineSeparator());
+            FileWriter writer = new FileWriter("MongoLog.jsonl", true);
+            writer.write(obj.toString() + System.lineSeparator());
             writer.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+    
     public void setResult(String collectionName, String filterJson, String updateJson,JsonObject obj,int time) {
         try {
             MongoCollection<Document> collection = database.getCollection(collectionName);
