@@ -51,15 +51,22 @@ public class Pig {
         // Execute the Pig script locally
         ProcessBuilder processBuilder = new ProcessBuilder("pig", "-x", "local", pigScript.getAbsolutePath());
         processBuilder.redirectErrorStream(true);
-
-        System.out.println("Executing Pig script: " + pigScript.getAbsolutePath());
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.contains("win")) {
+            processBuilder.redirectError(new File("NUL"));
+        } else {
+            processBuilder.redirectError(new File("/dev/null"));
+        }
+        //System.out.println("Executing Pig script: " + pigScript.getAbsolutePath());
         Process process = processBuilder.start();
-
+        
         // Output the process results
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                System.out.println(line);
+                if (line.matches("^\\(.*\\)$")) {
+                    System.out.println(line);
+                }
             }
         }
 
@@ -86,16 +93,16 @@ public class Pig {
         ProcessBuilder processBuilder = new ProcessBuilder("pig", "-x", "local", pigScript.getAbsolutePath());
         processBuilder.redirectErrorStream(true);
 
-        System.out.println("Executing Pig script: " + pigScript.getAbsolutePath());
+        //System.out.println("Executing Pig script: " + pigScript.getAbsolutePath());
         Process process = processBuilder.start();
 
         // Output the process results
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-            }
-        }
+        // try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+        //     String line;
+        //     while ((line = reader.readLine()) != null) {
+        //         System.out.println(line);
+        //     }
+        // }
 
         int exitCode = process.waitFor();
         System.out.println("Pig script executed with exit code: " + exitCode);

@@ -49,6 +49,8 @@ public class testCaseReader {
                 String table=obj.get("table").getAsString();
                 String condition = "";
                 String conditionForPig="";
+               
+                
                 for (int i = 0; i < keyAttrs.size(); i++) {
                     if (i > 0) condition += " AND ";
                     condition += keyAttrs.get(i).getAsString() + "='" + keyVals.get(i).getAsString() + "'";
@@ -105,7 +107,7 @@ public class testCaseReader {
                 } else if (op.equals("SET")) {
                         JsonArray colAttrs = obj.getAsJsonArray("column_attributes");
                         JsonArray colVals = obj.getAsJsonArray("column_values");
-
+                     
                         String updates = "";
                         for (int i = 0; i < colAttrs.size(); i++) {
                             if (i > 0) updates += ", ";
@@ -128,12 +130,32 @@ public class testCaseReader {
                             break;
                         case "PIG":
                             System.out.println("FOREACH "+table+" GENERATE " + updates + " WHERE " + condition + ";");
-                            String pigScript = 
+                            StringBuilder keyAttrBuilder = new StringBuilder();
+                            for (int i = 0; i < keyAttrs.size(); i++) {
+                                keyAttrBuilder.append(keyAttrs.get(i).getAsString());
+                                if (i < keyAttrs.size() - 1) {
+                                    keyAttrBuilder.append(", ");
+                                }
+                            }
+                            
+                            // Build column assignments string
+                            StringBuilder columnAssignments = new StringBuilder();
+                            for (int i = 0; i < colAttrs.size(); i++) {
+                                columnAssignments.append("'")
+                                                 .append(colVals.get(i).getAsString())
+                                                 .append("' AS ")
+                                                 .append(colAttrs.get(i).getAsString());
+                                if (i < colAttrs.size() - 1) {
+                                    columnAssignments.append(", ");
+                                }
+                            }
+                            
+                            // Construct full PIG script
+                            String pigScript =
                                 table + "_filtered = FILTER " + table + " BY " + conditionForPig + ";\n" +
                                 table + "_unfiltered = FILTER " + table + " BY NOT (" + conditionForPig + ");\n" +
-                                table + "_filtered_projected = FOREACH " + table + "_filtered GENERATE studentID, subjectCode, '" + colVals.get(0) + "' as grade;\n" +
-                                table + "_unfiltered_projected = FOREACH " + table + "_unfiltered GENERATE studentID, subjectCode, grade;\n" +
-                                "Final_" + table + "= UNION " + table + "_unfiltered_projected, " + table + "_filtered_projected;\n" +
+                                table + "_filtered_projected = FOREACH " + table + "_filtered GENERATE " +
+                                keyAttrBuilder.toString() + ", " + columnAssignments.toString() + ";\n" +
                                 "STORE " + table + "_filtered_projected INTO 'src/main/java/com/example/updated_grades.csv' USING PigStorage(',');\n";
                             PigClass.setResult(pigScript, obj, MergeHandler.timeCounter);
 
