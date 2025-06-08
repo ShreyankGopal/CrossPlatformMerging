@@ -85,25 +85,56 @@ Each operation is stored in `.jsonl` logs using a consistent format:
 
 4. Append only new/updated SET operations to the `to` system's oplog.
 
-### Flags for Consistency Tracking
+---
+## 🔄 Consistency Tracking Across Systems
 
-- **Six boolean flags** track directed merge status (e.g., `mysqlMergedWithMongo`).
-- **On SET:**  
-  - All outbound flags from the modified system are set to `false`.
-- **On MERGE:**  
-  - `from → to` is set to `true`.
-  - **Transitivity rule**: If `C → A` and `A → B`, then `C → B` is inferred and set `true`.
-  - **Correctness rule**: If outdated updates flow into a consistent system, downstream flags are invalidated.
+To maintain **eventual consistency** across the three database systems—**MySQL**, **Pig**, and **MongoDB**—we use a **merge-tracking state diagram** and a set of **Boolean flags**.
 
-### Synchronization Check
+### 🔁 Merge State Diagram
 
-- After each merge, a **global consistency check** runs:
-  - If **all six flags** are `true`, all systems are fully synchronized.
-  - In that case:
-    - Operation logs are flushed.
-    - All merge pointers are reset.
+Each directed edge (e.g., `mysql → pig`) represents that the destination system has incorporated all updates from the source system. These relationships are updated on every merge and form the basis for tracking data synchronization.
+
+![Merge State Diagram]()
 
 ---
+
+### 🧩 Flag Representation
+
+Each edge in the diagram corresponds to a Boolean flag used in the system to track merge status:
+
+
+
+| Edge | Boolean flag in code            |
+|------|----------------------------------|
+| m1   | `mysql_merged_with_pig`         |
+| m2   | `pig_merged_with_mongo`         |
+| m3   | `mongo_merged_with_mysql`       |
+| m4   | `mysql_merged_with_mongo`       |
+| m5   | `mongo_merged_with_pig`         |
+| m6   | `pig_merged_with_mysql`         |
+
+---
+
+### 🧠 How It Works
+
+- **After a SET operation**, all outbound flags from the modified system are set to `false` (others are outdated).
+- **After a MERGE**, the corresponding `from → to` flag is set to `true`.
+- **Transitivity Rule**:  
+  If system C had already seen all updates from A (`C → A` is true), and A just merged into B (`A → B`),  
+  then `C → B` is set to true as well.
+- **Correctness Rule**:  
+  If `B → C` is true but B just received new updates from A (`A → B`), and C hasn't seen A's updates,  
+  then `B → C` is set to `false`.
+
+---
+
+### ✅ Full Synchronization
+
+Once **all six flags are true**, the system is considered fully synchronized:
+- **Operation logs are flushed**
+- **Merge pointers reset**
+
+This ensures that **no redundant merges** happen and the three systems operate in a consistent, traceable state.
 
 ## Merge Properties
 
