@@ -94,7 +94,7 @@ To maintain **eventual consistency** across the three database systems—**MySQL
 
 Each directed edge (e.g., `mysql → pig`) represents that the destination system has incorporated all updates from the source system. These relationships are updated on every merge and form the basis for tracking data synchronization.
 
-![Merge State Diagram]()
+![Merge State Diagram](./State_Diagram.png)
 
 ---
 
